@@ -1,6 +1,7 @@
 ## 2022 AI CUP CropClassification
 
-### How to Train
+### How to train.py
+
 ```python
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_classes', type=int, default=14)
@@ -20,7 +21,8 @@
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 ```
 run train.py
-### How to predict
+
+### How to predict.py
 
 ```python
 	test_path  # test data 格式
