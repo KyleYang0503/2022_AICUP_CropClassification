@@ -1,5 +1,20 @@
 ## 2022 AI CUP CropClassification
 
+### Setup
+
+Python 3.7
+Torch  1.10
+Pretrained model:
+Swin-Transformer-L Official Github
+224x224
+https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window7_224_22k.pth
+
+384x384
+https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth
+
+ConvNeXt Official Github
+https://github.com/facebookresearch/ConvNeXt
+
 ### How to train.py
 
 ```python
