@@ -3,6 +3,7 @@
 ### Setup
 
 Python 3.7
+
 Torch  1.10
 
 Pretrained model:
