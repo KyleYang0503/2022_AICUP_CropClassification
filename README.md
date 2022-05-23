@@ -4,6 +4,7 @@
 
 Python 3.7
 Torch  1.10
+
 Pretrained model:
 
 Swin-Transformer-L Official Github
