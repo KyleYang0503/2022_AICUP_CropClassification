@@ -22,8 +22,6 @@ class MyDataSet(Dataset):
 
     def __getitem__(self, item):
         img = Image.open(self.images_path[item])
-        if img.mode != 'RGB':
-            raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
         label = self.images_class[item]
 
         if self.transform is not None:
