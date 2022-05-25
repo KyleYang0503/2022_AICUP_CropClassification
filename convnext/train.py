@@ -73,7 +73,6 @@ def main(args):
     if args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
         weights_dict = torch.load(args.weights, map_location=device)["model"]
-        # 刪除head
         for k in list(weights_dict.keys()):
             if "head" in k:
                 del weights_dict[k]
@@ -81,7 +80,6 @@ def main(args):
 
     if args.freeze_layers:
         for name, para in model.named_parameters():
-            # 只訓練全連接層
             if "head" not in name:
                 para.requires_grad_(False)
             else:
@@ -142,7 +140,6 @@ if __name__ == '__main__':
     parser.add_argument('--data-path', type=str,
                         default="./data/train")
 
-    #預訓練
     parser.add_argument('--weights', type=str, default='./weight/convnext_xlarge_22k_224.pth',
                         help='initial weights path')
     #freeze = True -> 只訓練head
