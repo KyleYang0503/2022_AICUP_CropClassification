@@ -70,8 +70,6 @@ class PatchEmbed(nn.Module):
     def forward(self, x):
         _, _, H, W = x.shape
 
-        # padding
-        # 如果输入图片的H，W不是patch_size的整数倍，需要进行padding
         pad_input = (H % self.patch_size[0] != 0) or (W % self.patch_size[1] != 0)
         if pad_input:
             # to pad the last 3 dimensions,
@@ -80,7 +78,6 @@ class PatchEmbed(nn.Module):
                           0, self.patch_size[0] - H % self.patch_size[0],
                           0, 0))
 
-        # 下采样patch_size倍
         x = self.proj(x)
         _, _, H, W = x.shape
         # flatten: [B, C, H, W] -> [B, C, HW]
@@ -107,13 +104,8 @@ class PatchMerging(nn.Module):
 
         x = x.view(B, H, W, C)
 
-        # padding
-        # 如果输入feature map的H，W不是2的整数倍，需要进行padding
         pad_input = (H % 2 == 1) or (W % 2 == 1)
         if pad_input:
-            # to pad the last 3 dimensions, starting from the last dimension and moving forward.
-            # (C_front, C_back, W_left, W_right, H_top, H_bottom)
-            # 注意这里的Tensor通道是[B, H, W, C]，所以会和官方文档有些不同
             x = F.pad(x, (0, 0, 0, W % 2, 0, H % 2))
 
         x0 = x[:, 0::2, 0::2, :]  # [B, H/2, W/2, C]
@@ -163,16 +155,13 @@ class WindowAttention(nn.Module):
         head_dim = dim // num_heads
         self.scale = head_dim ** -0.5
 
-        # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
             torch.zeros((2 * window_size[0] - 1) * (2 * window_size[1] - 1), num_heads))  # [2*Mh-1 * 2*Mw-1, nH]
 
-        # get pair-wise relative position index for each token inside the window
         coords_h = torch.arange(self.window_size[0])
         coords_w = torch.arange(self.window_size[1])
         coords = torch.stack(torch.meshgrid([coords_h, coords_w], indexing="ij"))  # [2, Mh, Mw]
         coords_flatten = torch.flatten(coords, 1)  # [2, Mh*Mw]
-        # [2, Mh*Mw, 1] - [2, 1, Mh*Mw]
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]  # [2, Mh*Mw, Mh*Mw]
         relative_coords = relative_coords.permute(1, 2, 0).contiguous()  # [Mh*Mw, Mh*Mw, 2]
         relative_coords[:, :, 0] += self.window_size[0] - 1  # shift to start from 0
@@ -193,9 +182,6 @@ class WindowAttention(nn.Module):
 
         # [batch_size*num_windows, Mh*Mw, total_embed_dim]
         B_, N, C = x.shape
-        # qkv(): -> [batch_size*num_windows, Mh*Mw, 3 * total_embed_dim]
-        # reshape: -> [batch_size*num_windows, Mh*Mw, 3, num_heads, embed_dim_per_head]
-        # permute: -> [3, batch_size*num_windows, num_heads, Mh*Mw, embed_dim_per_head]
         qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         # [batch_size*num_windows, num_heads, Mh*Mw, embed_dim_per_head]
         q, k, v = qkv.unbind(0)  # make torchscript happy (cannot use tensor as tuple)
@@ -265,8 +251,6 @@ class SwinTransformerBlock(nn.Module):
         x = self.norm1(x)
         x = x.view(B, H, W, C)
 
-        # pad feature maps to multiples of window size
-        # 把feature map给pad到window size的整数倍
         pad_l = pad_t = 0
         pad_r = (self.window_size - W % self.window_size) % self.window_size
         pad_b = (self.window_size - H % self.window_size) % self.window_size
@@ -298,7 +282,6 @@ class SwinTransformerBlock(nn.Module):
             x = shifted_x
 
         if pad_r > 0 or pad_b > 0:
-            # 把前面pad的数据移除掉
             x = x[:, :H, :W, :].contiguous()
 
         x = x.view(B, H * W, C)
@@ -344,11 +327,8 @@ class BasicLayer(nn.Module):
             self.downsample = None
 
     def create_mask(self, x, H, W):
-        # calculate attention mask for SW-MSA
-        # 保证Hp和Wp是window_size的整数倍
         Hp = int(np.ceil(H / self.window_size)) * self.window_size
         Wp = int(np.ceil(W / self.window_size)) * self.window_size
-        # 拥有和feature map一样的通道排列顺序，方便后续window_partition
         img_mask = torch.zeros((1, Hp, Wp, 1), device=x.device)  # [1, Hp, Wp, 1]
         h_slices = (slice(0, -self.window_size),
                     slice(-self.window_size, -self.shift_size),
@@ -398,7 +378,6 @@ class SwinTransformer(nn.Module):
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
         self.patch_norm = patch_norm
-        # stage4输出特征矩阵的channels
         self.num_features = int(embed_dim * 2 ** (self.num_layers - 1))
         self.mlp_ratio = mlp_ratio
 
